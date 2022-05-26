@@ -45,6 +45,14 @@ function userLoginApi(userInfo) {
   })
 }
 
+function userLogoutApi(id) {
+  return request({
+    url: '/user/logout',
+    method: 'post',
+    data: { id },
+  })
+}
+
 function userRegistryApi(userInfo) {
   return request({
     url: '/user/registry',
@@ -59,5 +67,6 @@ export {
   updateUserApi,
   deleteUsersApi,
   userLoginApi,
+  userLogoutApi,
   userRegistryApi,
 }

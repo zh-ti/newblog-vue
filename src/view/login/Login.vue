@@ -8,11 +8,11 @@
         >
           后台登录
         </h2>
-        <el-form-item prop="account">
+        <el-form-item prop="username">
           <el-input
             type="text"
-            placeholder="请输入电话或邮箱"
-            v-model.trim="form.account"
+            placeholder="请输入账号"
+            v-model.trim="form.username"
           >
             <i slot="prefix" class="el-icon-user"></i>
           </el-input>
@@ -28,42 +28,41 @@
           </el-input>
         </el-form-item>
       </el-form>
-      <el-form v-else :rules="registryRules" ref="registryForm">
+      <!-- <el-form v-else :rules="registryRules" ref="registryForm"> -->
+      <el-form v-else ref="registryForm">
         <h2
           style="text-align: center; margin-bottom: 30px; letter-spacing: 3px"
         >
           账号注册
         </h2>
-
-        <el-form-item :prop="registryType == 'phone' ? 'phone' : 'email'">
+        <el-form-item prop="registryType">
           <el-input
             type="text"
             v-model="registryForm.account"
-            :placeholder="`请输入${
-              registryForm.registryType == 'phone' ? '电话' : '邮箱'
-            }`"
+            :placeholder="`请输入${registryType}`"
           >
             <el-select
               slot="prepend"
-              v-model="registryForm.registryType"
+              v-model="registryType"
+              label="文本"
               style="width: 80px"
             >
-              <el-option label="电话" value="phone">
+              <el-option value="电话">
                 <i class="el-icon-phone"></i>
-                电话
+                手机
               </el-option>
-              <el-option label="邮箱" value="email">
+              <el-option value="邮箱">
                 <i class="el-icon-message"></i>
                 邮箱
               </el-option>
             </el-select>
           </el-input>
         </el-form-item>
-        <el-form-item porp="nickname">
+        <el-form-item porp="username">
           <el-input
             type="text"
-            placeholder="请输入用户名"
-            v-model="registryForm.nickname"
+            placeholder="请输入账号"
+            v-model="registryForm.username"
             prefix-icon="el-icon-user"
           ></el-input>
         </el-form-item>
@@ -99,6 +98,7 @@
           size="medium"
           :plain="!showRegistry"
           @click="registry"
+          :loading="registryLoading"
         >
           注册
         </el-button>
@@ -113,18 +113,20 @@ export default {
   data() {
     return {
       form: {
-        account: '',
+        username: '',
         password: '',
       },
+      registryType: '电话',
       registryForm: {
-        nickname: '',
+        username: '',
         account: '',
-        registryType: 'phone',
+        registryType: '', // phone-电话; email-邮箱
         password: '',
         confirmPassword: '',
       },
       showRegistry: false,
       loginLoading: false,
+      registryLoading: false,
       loginRules: {
         account: [
           {
@@ -143,32 +145,39 @@ export default {
           },
         ],
       },
-      registryRules: [],
+      registryRules: {},
     }
   },
+  computed: {},
+  filters: {},
   methods: {
     login() {
       //   this.$refs.loginForm.validate(valid => {
       //     console.log(valid)
       //   })
       if (!this.showRegistry) {
-        if (this.form.account.length > 0 && this.form.password.length > 0) {
+        if (this.form.username.length > 0 && this.form.password.length > 0) {
           this.loginLoading = true
-          userLoginApi(this.form).then(res => {
-            if (res.success) {
-              this.$message({
-                type: 'success',
-                message: '登录成功',
-              })
-              this.$router.replace('/admin')
-            } else {
-              this.$message({
-                type: 'error',
-                message: res.message,
-              })
-            }
-            this.loginLoading = false
-          })
+          userLoginApi(this.form)
+            .then(res => {
+              if (res.success) {
+                this.$message({
+                  type: 'success',
+                  message: '登录成功',
+                })
+                this.$store.dispatch('setCurrentUser', res.data)
+                this.$router.replace('/admin')
+              } else {
+                this.$message({
+                  type: 'error',
+                  message: res.message,
+                })
+              }
+              this.loginLoading = false
+            })
+            .catch(() => {
+              this.loginLoading = false
+            })
         }
       } else {
         this.showRegistry = false
@@ -176,30 +185,45 @@ export default {
     },
     registry() {
       if (this.showRegistry) {
-        console.log(this.registryForm)
-        userRegistryApi(this.registryForm).then(res => {
-          console.log(res)
-          if (res.success) {
-            this.$message({
-              type: 'success',
-              message: '注册成功',
-            })
-          } else {
-            this.$message({
-              type: 'error',
-              message: res.message,
-            })
-          }
-        })
+        this.registryForm.registryType = this.transferRegistryType(
+          this.registryType
+        )
+        this.registryLoading = true
+        userRegistryApi(this.registryForm)
+          .then(res => {
+            if (res.success) {
+              this.$message({
+                type: 'success',
+                message: '注册成功',
+              })
+            } else {
+              this.$message({
+                type: 'error',
+                message: res.message,
+              })
+            }
+            this.registryLoading = false
+          })
+          .catch(() => {
+            this.loginLoading = false
+          })
       } else {
         this.showRegistry = true
+      }
+    },
+    transferRegistryType() {
+      switch (this.registryType) {
+        case '电话':
+          return 'phone'
+        case '邮箱':
+          return 'email'
       }
     },
   },
 }
 </script>
 
-<style>
+<style scoped>
 .login-view {
   height: 100vh;
   display: flex;

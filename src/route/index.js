@@ -3,8 +3,6 @@ import Vue from 'vue'
 
 Vue.use(VueRouter)
 
-import MainView from '@/view/main/MainView'
-
 const routes = [
   {
     path: '/login',
@@ -12,7 +10,7 @@ const routes = [
   },
   {
     path: '/admin',
-    component: MainView,
+    component: () => import('@/view/main/MainView'),
     meta: {
       name: '系统管理',
     },
@@ -32,6 +30,22 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/article',
+    component: () => import('@/view/main/MainView'),
+    meta: {
+      name: '文章管理',
+    },
+    children: [
+      {
+        path: 'edit',
+        component: () => import('@/view/article/ArticleEdit'),
+        meta: {
+          name: '文章编辑',
+        },
+      },
+    ],
+  },
 ]
 
 // 处理路由地址重读报错的问题
@@ -41,5 +55,9 @@ VueRouter.prototype.push = function push(location) {
 }
 
 const router = new VueRouter({ routes, mode: 'history' })
+
+router.beforeEach((to, from, next) => {
+  next()
+})
 
 export default router

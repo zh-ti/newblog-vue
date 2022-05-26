@@ -14,12 +14,12 @@
         @selection-change="handleSelectionChange"
         :header-row-style="{ backgroundColor: '#eee', color: '#555' }"
         :header-cell-style="{ backgroundColor: 'transparent' }"
+        v-loading="loading"
       >
         <el-table-column type="selection" width="50"></el-table-column>
-        <el-table-column prop="name" label="姓名"></el-table-column>
         <el-table-column
-          prop="nickname"
-          label="昵称"
+          prop="username"
+          label="账号"
           show-overflow-tooltip
         ></el-table-column>
         <el-table-column prop="avatar" label="头像"></el-table-column>
@@ -84,36 +84,29 @@
       :close-on-click-modal="false"
       width="600px"
     >
-      <el-form inline v-model="form">
-        <el-form-item label="姓名">
+      <el-form inline v-model="form" class="manage-user-form">
+        <el-form-item label="账号">
           <el-input
             type="text"
-            v-model="form.name"
-            placeholder="请输入姓名"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="昵称">
-          <el-input
-            type="text"
-            v-model="form.nickname"
-            placeholder="请输入昵称"
+            v-model="form.username"
+            placeholder="请输入账号"
           ></el-input>
         </el-form-item>
         <el-form-item label="头像">
           <el-input v-model="form.avatar" placeholder="请选择头像"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input
-            type="text"
-            v-model="form.email"
-            placeholder="请输入邮箱"
-          ></el-input>
         </el-form-item>
         <el-form-item label="手机">
           <el-input
             type="text"
             v-model="form.phone"
             placeholder="请输入手机号"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input
+            type="text"
+            v-model="form.email"
+            placeholder="请输入邮箱"
           ></el-input>
         </el-form-item>
         <el-form-item label="地址">
@@ -177,8 +170,8 @@ export default {
       selected: [],
       searchTypes: [
         {
-          label: '姓名',
-          value: 'name',
+          label: '账号',
+          value: 'username',
         },
         {
           label: '邮箱',
@@ -196,13 +189,13 @@ export default {
       operation: 'update',
       showEdit: false,
       form: {
-        name: '',
-        nickname: '',
+        username: '',
         avatar: '',
         email: '',
         phone: '',
         address: '',
       },
+      loading: true,
     }
   },
   created() {
@@ -231,8 +224,7 @@ export default {
     // 添加编辑表单
     showEditForm(row) {
       this.form.id = row.id
-      this.form.name = row.name
-      this.form.nickname = row.nickname
+      this.form.username = row.username
       this.form.avatar = row.avatar
       this.form.email = row.email
       this.form.phone = row.phone
@@ -249,6 +241,11 @@ export default {
           })
           this.showEdit = false
           this.loadPageData()
+        } else {
+          this.$message({
+            type: 'warning',
+            message: res.message,
+          })
         }
       })
     },
@@ -260,14 +257,14 @@ export default {
             message: '用户信息修改成功',
           })
           this.loadPageData()
+          this.showEdit = false
+          this.resetForm()
         } else {
           this.$message({
             type: 'error',
-            message: '用户信息修改失败',
+            message: res.message,
           })
         }
-        this.showEdit = false
-        this.resetForm()
       })
     },
     deleteUser({ id }) {
@@ -315,17 +312,26 @@ export default {
     },
     // 加载数据
     loadPageData(page = this.page.current, size = this.page.size, condition) {
-      getUserListApi(page, size, condition).then(({ data }) => {
-        this.tableData = data.dataList
-        this.page.current = data.currentPage
-        this.page.size = data.pageSize
-        this.page.total = data.total
+      this.loading = true
+      getUserListApi(page, size, condition).then(res => {
+        if (res.success) {
+          let data = res.data
+          this.tableData = data.dataList
+          this.page.current = data.currentPage
+          this.page.size = data.pageSize
+          this.page.total = data.total
+        } else {
+          this.$message({
+            type: 'error',
+            message: res.message,
+          })
+        }
+        this.loading = false
       })
     },
     resetForm() {
       this.form = {
-        name: '',
-        nickname: '',
+        username: '',
         avatar: '',
         email: '',
         phone: '',
@@ -336,21 +342,21 @@ export default {
 }
 </script>
 
-<style>
-.el-popconfirm__main {
+<style scoped>
+.manage-user-form >>> .el-popconfirm__main {
   margin: 5px 0;
 }
-.el-form-item {
+.manage-user-form >>> .el-form-item {
   width: 100%;
 }
-.el-form-item:last-child {
+.manage-user-form >>> .el-form-item:last-child {
   margin-bottom: 0;
 }
-.el-form-item__label {
+.manage-user-form >>> .el-form-item__label {
   width: 70px;
   letter-spacing: 0.25em;
 }
-.el-form-item__content {
+.manage-user-form >>> .el-form-item__content {
   width: calc(100% - 100px);
 }
 </style>
