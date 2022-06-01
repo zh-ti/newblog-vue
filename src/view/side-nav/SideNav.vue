@@ -1,11 +1,13 @@
 <template>
   <el-aside :width="showWidth + 'px'" style="height: 100vh">
     <el-menu
-      :default-openeds="['1', '3']"
+      :default-openeds="['1', '2', '3']"
       style="overflow-x: hidden; height: 100%"
       background-color="rgb(48, 65, 86)"
       text-color="#fff"
       active-text-color="#ffd046"
+      :default-active="$route.path"
+      router
       :collapse="isCollapse"
       :collapse-transition="false"
     >
@@ -28,10 +30,10 @@
           <i class="el-icon-message"></i>
           <span slot="title">系统管理</span>
         </template>
-        <el-menu-item index="1-1" @click="$router.push('/admin/user')">
+        <el-menu-item index="/admin/user" @click="$router.push('/admin/user')">
           用户管理
         </el-menu-item>
-        <el-menu-item index="1-2" @click="$router.push('/admin/demo')">
+        <el-menu-item index="/admin/demo" @click="$router.push('/admin/demo')">
           demo
         </el-menu-item>
       </el-submenu>
@@ -40,7 +42,16 @@
           <i class="el-icon-menu"></i>
           <span slot="title">文章管理</span>
         </template>
-        <el-menu-item index="2-1" @click="$router.push('/article/edit')">
+        <el-menu-item
+          index="/article/manage"
+          @click="$router.push('/article/manage')"
+        >
+          文章管理
+        </el-menu-item>
+        <el-menu-item
+          index="/article/edit"
+          @click="$router.push('/article/edit/')"
+        >
           文章编辑
         </el-menu-item>
       </el-submenu>

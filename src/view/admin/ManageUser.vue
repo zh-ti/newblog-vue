@@ -67,7 +67,7 @@
     <el-row type="flex" justify="center">
       <el-pagination
         background
-        layout="prev, pager, next"
+        layout="total, prev, pager, next"
         :total="page.total"
         :page-size="page.size"
         :current-page="page.current"

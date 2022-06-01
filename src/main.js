@@ -10,7 +10,7 @@ import 'mavon-editor/dist/css/index.css'
 
 import VueCookie from 'vue-cookie'
 
-Vue.use(ElementUi)
+Vue.use(ElementUi, { size: 'medium' })
 Vue.use(VueCookie)
 Vue.use(MavenEditor)
 

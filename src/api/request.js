@@ -17,7 +17,12 @@ request.interceptors.request.use(request => {
 })
 request.interceptors.response.use(
   result => {
-    return result.data
+    console.log(result.data)
+    if (result.data.success) {
+      return result.data
+    } else {
+      Message({ type: 'error', message: result.data.message })
+    }
   },
   () => {
     Message({ type: 'error', message: '请求异常' })

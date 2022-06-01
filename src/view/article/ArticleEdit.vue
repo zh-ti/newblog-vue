@@ -1,216 +1,184 @@
 <template>
-  <div class="article-edit">
-    <el-card class="operation">
-      <el-row
-        type="flex"
-        justify="space-round"
-        align="center"
-        style="margin: 0"
-      >
-        <el-col>
-          <span style="line-height: 40px">共 100 字</span>
-        </el-col>
-        <el-col class="buttons">
-          <el-button type="success">保存草稿</el-button>
-          <el-button type="primary">发布文章</el-button>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <el-card style="margin-top: 20px">
-      <el-form label-position="left" label-width="80px">
-        <el-form-item label="文章标题">
-          <el-input
-            style="font-size: 18px"
-            v-model="article.title"
-            placeholder="请输入标题"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="文章类型">
-          <el-radio-group v-model="article.type" size="medium">
-            <el-radio label="原创"></el-radio>
-            <el-radio label="转载"></el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="转载地址" v-if="article.type == '转载'">
-          <el-input
-            type="text"
-            placeholder="请输入原文的地址"
-            style=""
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="文章标签">
-          <el-tag
-            :key="tag"
-            v-for="tag in article.tags"
-            closable
-            :disable-transitions="true"
-            @close="removeTag(tag)"
-            style="margin: 0 7px 7px 0"
-            class="tag"
-          >
-            {{ tag }}
-          </el-tag>
-          <el-popover width="305" placement="right" trigger="click">
-            <el-row style="margin-bottom: 10px">
-              <el-input
-                v-model.trim="inputValue"
-                placeholder="输入文字搜索，输入完成按 Enter 新增标签"
-                size="small"
-                @input="searchTag"
-                @keyup.enter.native="addTag"
-              ></el-input>
-            </el-row>
-            <el-row>
-              <el-tag
-                :key="tag"
-                v-for="tag in tags"
-                :disable-transitions="false"
-                style="margin: 0 7px 7px 0; cursor: pointer"
-                :type="article.tags.includes(tag) ? 'primary' : 'info'"
-                @click.self="selectTag(tag)"
-                @close="delTag(tag)"
-                size="medium"
-                closable
-              >
-                {{ tag }}
-              </el-tag>
-            </el-row>
-            <el-button slot="reference" size="small">添加标签</el-button>
-          </el-popover>
-        </el-form-item>
-        <el-form-item label="文章摘要">
-          <el-input
-            style="font-size: 16px"
-            type="textarea"
-            v-model="article.summary"
-            :autosize="{ minRows: 2, maxRows: 5 }"
-            placeholder="请输入文章摘要"
-            maxlength="200"
-            show-word-limit
-          ></el-input>
-        </el-form-item>
-      </el-form>
-
-      <el-row style="margin-top: 20px">
-        <mavon-editor
-          v-model="article.content"
-          boxShadowStyle="0 0 1px #999"
-        ></mavon-editor>
-      </el-row>
-    </el-card>
-
-    <el-backtop
-      target=".main-container"
-      style="z-index: 10000; background: #ecf0f1; color: #2980b9"
-      :right="60"
-      :bottom="40"
-    ></el-backtop>
+  <div>
+    <Editor
+      ref="editor"
+      :article="article"
+      :tags="tags"
+      :categorys="categorys"
+      :autoSaveTimeout="5000"
+      @save="commitSave"
+      @searchTag="searchTag"
+      @publish="commitPublish"
+      @withdraw="withdraw"
+      v-loading="loading"
+    ></Editor>
   </div>
 </template>
 
 <script>
+import Editor from '@/components/article/Editor'
+import { getTagListApi, addTagApi } from '@/api/tagApi'
+import { getCategoryListApi } from '@/api/categoryApi'
+import {
+  getArticleByIdApi,
+  addArticleApi,
+  updateArticleApi,
+  publishArticleApi,
+} from '@/api/articleApi'
+
 export default {
+  components: {
+    Editor,
+  },
   data() {
     return {
       article: {
+        id: null,
         title: '',
         summary: '',
-        content: '',
-        type: '原创',
-        tags: ['js', 'java'],
+        text: '',
+        author: '',
+        type: 0,
+        state: 0,
+        originUrl: '',
+        category: '0',
+        tags: [],
       },
-      tags: ['js', 'java'],
-      inputValue: '',
-      throttleFlag: null,
+      originArticle: {
+        id: null,
+        title: '',
+        summary: '',
+        text: '',
+        author: '',
+        type: 0,
+        state: 0,
+        originUrl: '',
+        category: '0',
+        tags: [],
+      },
+      categorys: [],
+      tags: [],
+      loading: false,
+      doPublish: false,
     }
   },
-  mounted() {},
+  created() {
+    let id = this.$route.params.id
+    if (id) {
+      this.loading = true
+      this.getArticleById(id)
+    }
+    this.loadTags()
+    this.loadCategory()
+  },
+  beforeRouteLeave(to, from, next) {
+    this.$refs.editor.save(null, false)
+    this.article = this.originArticle
+    next()
+  },
   methods: {
-    removeTag(tag) {
-      let index = this.article.tags.findIndex(item => item == tag)
-      if (index != -1) {
-        this.article.tags.splice(index, 1)
-      }
-    },
-    showInput() {
-      this.inputVisible = true
-      this.$nextTick(() => {
-        this.$refs.saveTagInput.$refs.input.focus()
+    getArticleById(id) {
+      getArticleByIdApi(id).then(res => {
+        this.loading = false
+        const article = res.data.dataList[0]
+        if (article.text == null) article.text = ''
+        if (article.html == null) article.html = ''
+        if (article.tags == null) article.tags = []
+        article.category = article.category.id
+        this.article = article
       })
     },
     addTag() {
-      if (this.inputValue) {
-        if (!this.tags.includes(this.inputValue)) {
-          this.tags.push(this.inputValue)
-        } else {
-          this.$message({
-            type: 'warning',
-            message: `标签“${this.inputValue}”已存在`,
-          })
-        }
+      let value = this.inputValue
+      if (value.length > 0) {
+        addTagApi(value).then(res => {
+          if (res.success) {
+            this.loadTags()
+            this.inputValue = ''
+          }
+        })
       }
-      this.inputValue = ''
     },
-    delTag(tag) {
-      if (this.article.tags.includes(tag)) {
+    searchTag(value) {
+      if (value.length == 0) {
+        this.loadTags()
+      } else {
+        this.loadTags(value)
+      }
+    },
+    loadTags(keyword = null) {
+      getTagListApi(keyword).then(res => {
+        this.tags = res.data
+      })
+    },
+    loadCategory() {
+      getCategoryListApi().then(res => {
+        this.categorys = res.data
+      })
+    },
+    commitSave(article) {
+      if (article.title.length == 0) {
         this.$message({
           type: 'warning',
-          message: `标签“${tag}”已被引用无法删除`,
+          message: '文章标题不能为空',
+        })
+        return
+      }
+      this.article = article
+      this.article.author = this.$store.state.currentUser.id
+      if (this.article.id == null) {
+        this.save()
+      } else {
+        this.update()
+      }
+    },
+    save() {
+      addArticleApi(this.article).then(res => {
+        this.article.id = res.data
+        this.replay(res, 'save')
+      })
+    },
+    update() {
+      updateArticleApi(this.article).then(res => {
+        this.replay(res, 'update')
+      })
+    },
+    commitPublish() {
+      this.$refs.editor.article.state = 1
+      this.$refs.editor.save()
+    },
+    publish(id) {
+      publishArticleApi(id).then(res => {
+        this.replay(res, 'publish')
+      })
+    },
+    withdraw() {
+      this.$refs.editor.article.state = 0
+      this.$refs.editor.save()
+    },
+    replay(res, method) {
+      let message
+      if (method == 'save' || message == 'update') {
+        message = '文章保存成功'
+      } else if (method == 'publish') {
+        message = '文章发布成功'
+      } else if (method == 'withdraw') {
+        message = '文章撤回成功'
+      }
+      if (res.success) {
+        this.$message({
+          type: 'success',
+          message: message,
         })
       } else {
-        let index = this.tags.findIndex(item => item == tag)
-        if (index != -1) {
-          this.tags.splice(index, 1)
-        }
-      }
-    },
-    selectTag(tag) {
-      if (!this.article.tags.includes(tag)) {
-        if (this.article.tags.length < 5) {
-          this.article.tags.push(tag)
-        } else {
-          this.$message({
-            type: 'warning',
-            message: '文章最多拥有5个标签',
-          })
-        }
-      } else {
-        this.removeTag(tag)
-      }
-    },
-    searchTag() {
-      if (this.inputValue.length > 0) {
-        this.throttleFlag && clearTimeout(this.throttleFlag)
-        this.throttleFlag = setTimeout(() => {
-          console.log(this.inputValue)
-        }, 500)
+        this.$message({
+          type: 'warning',
+          message: res.message,
+        })
       }
     },
   },
 }
 </script>
 
-<style scoped>
-.article-edit {
-  position: relative;
-}
-.operation {
-  position: relative;
-}
-.fixed-operation {
-  position: fixed;
-  top: 100px;
-  background-color: #eee;
-}
-.button-new-tag {
-  height: 32px;
-  line-height: 30px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.input-new-tag {
-  width: 90px;
-  /* vertical-align: bottom; */
-}
-</style>
+<style></style>

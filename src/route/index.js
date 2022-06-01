@@ -6,10 +6,12 @@ Vue.use(VueRouter)
 const routes = [
   {
     path: '/login',
+    name: 'login',
     component: () => import('@/view/login/Login'),
   },
   {
     path: '/admin',
+    name: 'admin',
     component: () => import('@/view/main/MainView'),
     meta: {
       name: '系统管理',
@@ -17,6 +19,7 @@ const routes = [
     children: [
       {
         path: 'user',
+        name: 'user',
         component: () => import('@/view/admin/ManageUser'),
         meta: {
           name: '用户管理',
@@ -24,6 +27,7 @@ const routes = [
       },
       {
         path: 'demo',
+        name: 'demo',
         meta: {
           name: '其他',
         },
@@ -32,13 +36,27 @@ const routes = [
   },
   {
     path: '/article',
+    name: 'article',
     component: () => import('@/view/main/MainView'),
     meta: {
       name: '文章管理',
     },
     children: [
       {
+        path: 'manage',
+        name: 'manage',
+        component: () => import('@/view/article/ManageArticle'),
+        meta: {
+          name: '文章管理',
+        },
+      },
+      {
         path: 'edit',
+        component: () => import('@/view/article/ArticleEdit'),
+      },
+      {
+        path: 'edit/:id',
+        name: 'edit',
         component: () => import('@/view/article/ArticleEdit'),
         meta: {
           name: '文章编辑',

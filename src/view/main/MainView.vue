@@ -29,10 +29,10 @@
         </el-dropdown>
       </el-header>
       <el-main
-      class="main-container"
+        class="main-container"
         style="height: calc(100% - 60px); overflow: auto; position: relative"
       >
-        <el-row style="margin-bottom: 30px">
+        <!-- <el-row style="margin-bottom: 30px">
           <el-breadcrumb separator="/" style="font-size: 16px">
             <el-breadcrumb-item
               v-for="(item, index) in historyRoutes"
@@ -42,7 +42,7 @@
               {{ item.name }}
             </el-breadcrumb-item>
           </el-breadcrumb>
-        </el-row>
+        </el-row> -->
         <transition>
           <router-view></router-view>
         </transition>
@@ -61,7 +61,7 @@ export default {
   data() {
     return {
       collapseIcon: 'el-icon-s-fold',
-      isCollapse: true,
+      isCollapse: false,
       multipleSelection: [],
       historyRoutes: [],
     }
@@ -72,14 +72,17 @@ export default {
   },
   methods: {
     logout() {
-      userLogoutApi(this.$store.state.currentUser.id).then(() => {
-        this.$router.replace('/login')
-        this.$store.dispatch('setCurrentUser', null)
-        this.$message({
-          type: 'success',
-          message: '退出登录成功！',
+      const currentUser = this.$store.state.currentUser
+      if (currentUser) {
+        userLogoutApi(currentUser.id).then(() => {
+          this.$store.dispatch('setCurrentUser', null)
+          this.$message({
+            type: 'success',
+            message: '退出登录成功！',
+          })
         })
-      })
+      }
+      this.$router.replace('/login')
     },
   },
   watch: {
